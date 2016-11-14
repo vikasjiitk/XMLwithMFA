@@ -34,13 +34,29 @@ if (is.null(init)) { stima=try(factanal(y,r,rotation="none"),silent=TRUE)
                                     H=init$H}
                                                
 
-if (!is.character(stima)) {z=matrix(factanal(y,r,scores="Bartlett")$scores,numobs)
-if (k>1) memb=kmeans(z,k)$cl else memb=rep(1,numobs)} else {if (k>1) memb=kmeans(y,k)$cl else memb=rep(1,numobs)}
-for  (i in 1:k) if ((table(memb)[i])<2) memb[sample(1:numobs,2,replace=FALSE)]=i
+if (!is.character(stima)) {
+	z=matrix(factanal(y,r,scores="Bartlett")$scores,numobs)
+	if (k>1) memb=kmeans(z,k)$cl else memb=rep(1,numobs)
+} 
+else {
+	if (k>1) memb=kmeans(y,k)$cl else memb=rep(1,numobs)
+}
 
-if (is.null(init$phi)) {phi<-matrix(0,k,q.w) } else phi<-init$phi
-if (is.null(init$w)) {  w<-table(memb)/sum(table(memb))
-                        w<-t(t(w))} else w<-init$w
+for  (i in 1:k) 
+	if ((table(memb)[i])<2) 
+		memb[sample(1:numobs,2,replace=FALSE)]=i
+
+if (is.null(init$phi)) {
+	phi<-matrix(0,k,q.w) 
+} 
+else phi<-init$phi
+
+if (is.null(init$w)) {  
+	w<-table(memb)/sum(table(memb))
+    w<-t(t(w))
+} 
+else 
+	w<-init$w
                                 
 
 w<-matrix(w,nrow=k,ncol=numobs)
@@ -52,20 +68,29 @@ if (q.z>1) if (is.null(init$Beta)) { for (i in 1:k) Beta[i,,]=runif(r*q.z,-1,1)}
 if (q.z==1) if (is.null(init$Beta)) { for (i in 1:k) Beta[i,,1]=colMeans(matrix(z[memb==i,],ncol=r))} else Beta<-init$Beta
 if (is.null(init$sigma)) { for (i in 1:k) sigma[i,,]<-var(z[memb==i,])} else sigma<-init$sigma
 
+no_iter <- 100
+batch_size <- 100
+for (i in 1:no_iter) {
 
-out<-fma.em.alg(y,numobs,r,k,p,x.z,q.z,x.w,q.w,phi,it,H,w,Beta,sigma,eps,psi,lik)
+	batch_indices <- c(sample(1:numobs), batch_size)
+	y_batch <- y[batch_indices,]
+	if(!is.NULL(x.w)) x.w_batch <- x.w[batch_indices,]
+	if(!is.NULL(x.z)) x.z_batch <- x.z[batch_indices,]
 
-likelihood<-out$likelihood
-ph.y<-out$ph.y
-py.h<-out$py.h
-sigma<-out$sigma
-H<-out$H
-w<-out$w
-Beta<-out$Beta
-psi<-out$psi
-psi<-diag(diag(psi))
-phi<-out$phi
-likelihood<-matrix(likelihood[!likelihood==0])
+	out<-fma.em.alg(y_batch,batch_size,r,k,p,x.z_batch,q.z,x.w_batch,q.w,phi,it,H,w,Beta,sigma,eps,psi,lik)
+
+	likelihood<-out$likelihood
+	ph.y<-out$ph.y
+	py.h<-out$py.h
+	sigma<-out$sigma
+	H<-out$H
+	w<-out$w
+	Beta<-out$Beta
+	psi<-out$psi
+	psi<-diag(diag(psi))
+	phi<-out$phi
+	likelihood<-matrix(likelihood[!likelihood==0])
+}
 
 if (k>1)  {  index<-(apply(ph.y, 2, order))[k,]} else index<-rep(k,numobs) 
 z<-t(solve(t(H)%*%solve(psi)%*%H)%*%t(H)%*%solve(psi)%*%t(y))
