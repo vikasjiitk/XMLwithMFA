@@ -1,5 +1,5 @@
-fma <-
-function(y,k,r,x.z=NULL,x.w=NULL,it=15,eps=0.0001,seed=4,scaling=FALSE,init=NULL)
+onlinefma <-
+function(y,k,r,x.z=NULL,x.w=NULL,it=1,eps=0.0001,seed=4,scaling=FALSE,init=NULL,no_iter=100,batch_size=100)
 {
 
 ptm <- proc.time()
@@ -68,40 +68,54 @@ if (q.z>1) if (is.null(init$Beta)) { for (i in 1:k) Beta[i,,]=runif(r*q.z,-1,1)}
 if (q.z==1) if (is.null(init$Beta)) { for (i in 1:k) Beta[i,,1]=colMeans(matrix(z[memb==i,],ncol=r))} else Beta<-init$Beta
 if (is.null(init$sigma)) { for (i in 1:k) sigma[i,,]<-var(z[memb==i,])} else sigma<-init$sigma
 
-no_iter <- 100
-batch_size <- 100
 for (i in 1:no_iter) {
 
-	batch_indices <- c(sample(1:numobs), batch_size)
+	# print (batch_size)
+	batch_indices <- c(sample(1:numobs, batch_size))
 	y_batch <- y[batch_indices,]
-	if(!is.NULL(x.w)) x.w_batch <- x.w[batch_indices,]
-	if(!is.NULL(x.z)) x.z_batch <- x.z[batch_indices,]
-
-	out<-fma.em.alg(y_batch,batch_size,r,k,p,x.z_batch,q.z,x.w_batch,q.w,phi,it,H,w,Beta,sigma,eps,psi,lik)
+	w_batch <- w[,batch_indices]
+	# print (y_batch)
+	if(!is.null(x.w)) x.w_batch <- x.w[batch_indices,]
+	else x.w_batch <- NULL
+	if(!is.null(x.z)) x.z_batch <- x.z[batch_indices,]
+	else x.z_batch <- NULL
+ 	# print (dim(w))
+ 	# print (dim(w_batch))
+	out<-fma.em.alg(y_batch,batch_size,r,k,p,x.z_batch,q.z,x.w_batch,q.w,phi,it,H,w_batch,Beta,sigma,eps,psi,lik)
 
 	likelihood<-out$likelihood
 	ph.y<-out$ph.y
 	py.h<-out$py.h
 	sigma<-out$sigma
 	H<-out$H
-	w<-out$w
+	w_batch<-out$w
 	Beta<-out$Beta
 	psi<-out$psi
 	psi<-diag(diag(psi))
 	phi<-out$phi
 	likelihood<-matrix(likelihood[!likelihood==0])
+
+	h<-(k-1)*(q.w+(r*q.z)+r*(r+1)/2)+p*(r+1)   
+	pen<-h*log(numobs)
+	lik<-likelihood[length(likelihood)]
+	bic<--2*lik+pen
+	aic<--2*lik+2*h
+	print(lik)
+
+	l <- 1
+	for (j in  batch_indices){
+		w[,j] <- w_batch[,l]
+		l <- l+1
+	}
+
 }
 
+print ('finished')
 if (k>1)  {  index<-(apply(ph.y, 2, order))[k,]} else index<-rep(k,numobs) 
 z<-t(solve(t(H)%*%solve(psi)%*%H)%*%t(H)%*%solve(psi)%*%t(y))
 
 for (i in 1:k) if (sum(index==i)==0) index[c(sample(1:numobs,q.z))]<-i
 
-h<-(k-1)*(q.w+(r*q.z)+r*(r+1)/2)+p*(r+1)   
-pen<-h*log(numobs)
-lik<-likelihood[length(likelihood)]
-bic<--2*lik+pen
-aic<--2*lik+2*h
 output<-list(H=H,lik=likelihood,w=w,Beta=Beta,psi=psi,sigma=sigma,ph.y=ph.y,index=index,z=z,phi=phi,bic=bic,elapsed=proc.time()-ptm,aic=aic) 
 invisible(output)
 }
