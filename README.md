@@ -3,6 +3,7 @@ Extreme Multi-label Learning Using Mixture of Factor Analyzers
 Undergraduate Project, Autumn 2016  
 [Vikas Jain](http://home.iitk.ac.in/~vikasj)  
 Under the guidance of [Prof Piyush Rai](http://cse.iitk.ac.in/users/piyush)  
+[Department of Computer Science and Engineering](http://cse.iitk.ac.in), [IIT Kanpur](http://iitk.ac.in), India  
 
 ***
 ##Project Idea 
