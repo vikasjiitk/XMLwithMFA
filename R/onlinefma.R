@@ -1,5 +1,5 @@
 onlinefma <-
-function(y,k,r,x.z=NULL,x.w=NULL,it=1,eps=0.0001,seed=4,scaling=FALSE,init=NULL,no_iter=100,batch_size=100)
+function(y,k,r,x.z=NULL,x.w=NULL,it=1,eps=0.0001,seed=4,scaling=FALSE,init=NULL,no_iter=100,batch_size=1000)
 {
 
 ptm <- proc.time()
@@ -14,7 +14,9 @@ ybar<- apply(y, 2, mean)
 y<-scale(y, ybar, scale=FALSE) 
 lik<--100000000000
 
- 
+if(!is.null(x.w)) x.w <- x.w[,1:99]
+if(!is.null(x.z)) x.z <- x.z[,1:99]
+
 x.z<-cbind(rep(1,numobs),x.z)
 q.z<-ncol(x.z) 
 x.w<-cbind(rep(1,numobs),x.w)
@@ -68,8 +70,10 @@ if (q.z>1) if (is.null(init$Beta)) { for (i in 1:k) Beta[i,,]=runif(r*q.z,-1,1)}
 if (q.z==1) if (is.null(init$Beta)) { for (i in 1:k) Beta[i,,1]=colMeans(matrix(z[memb==i,],ncol=r))} else Beta<-init$Beta
 if (is.null(init$sigma)) { for (i in 1:k) sigma[i,,]<-var(z[memb==i,])} else sigma<-init$sigma
 
+rate <- -1
 for (i in 1:no_iter) {
 
+	gamma <- (i+1)^rate
 	# print (batch_size)
 	batch_indices <- c(sample(1:numobs, batch_size))
 	y_batch <- y[batch_indices,]
@@ -86,13 +90,13 @@ for (i in 1:no_iter) {
 	likelihood<-out$likelihood
 	ph.y<-out$ph.y
 	py.h<-out$py.h
-	sigma<-out$sigma
-	H<-out$H
+	sigma<-(1-gamma)*sigma+gamma*(out$sigma)
+	H<-(1-gamma)*H+gamma*(out$H)
 	w_batch<-out$w
-	Beta<-out$Beta
-	psi<-out$psi
+	Beta<-(1-gamma)*Beta+gamma*(out$Beta)
+	psi<-(1-gamma)*psi+gamma*(out$psi)
 	psi<-diag(diag(psi))
-	phi<-out$phi
+	phi<-(1-gamma)*phi+gamma*(out$phi)
 	likelihood<-matrix(likelihood[!likelihood==0])
 
 	h<-(k-1)*(q.w+(r*q.z)+r*(r+1)/2)+p*(r+1)   
@@ -104,10 +108,9 @@ for (i in 1:no_iter) {
 
 	l <- 1
 	for (j in  batch_indices){
-		w[,j] <- w_batch[,l]
+		w[,j] <- (1-gamma)*w[,j]+gamma*w_batch[,l]
 		l <- l+1
 	}
-
 }
 
 print ('finished')
