@@ -1,5 +1,5 @@
 onlinefma <-
-function(y,k,r,x.z=NULL,x.w=NULL,it=1,eps=0.0001,seed=4,scaling=FALSE,init=NULL,no_iter=100,batch_size=1000)
+function(y,k,r,x.z=NULL,x.w=NULL,it=1,eps=0.0001,seed=4,scaling=FALSE,init=NULL,no_iter=500,batch_size=200)
 {
 
 ptm <- proc.time()
@@ -10,15 +10,22 @@ if (scaling) y<-scale(y)
 
 numobs<-nrow(y)
 p<-ncol(y)
-ybar<- apply(y, 2, mean)
-y<-scale(y, ybar, scale=FALSE) 
+# ybar<- apply(y, 2, mean)
+# y<-scale(y, ybar, scale=FALSE) 
 lik<--100000000000
 
-if(!is.null(x.w)) x.w <- x.w[,1:99]
-if(!is.null(x.z)) x.z <- x.z[,1:99]
+# if(!is.null(x.w)) { 
+# 	x.w <- x.w[,1:5]
+# 	x.w <- scale(x.w)
+# }
+# if(!is.null(x.z)) {
+# 	x.z <- x.z[,1:5]
+# 	x.z <- scale(x.z)
+# }
 
 x.z<-cbind(rep(1,numobs),x.z)
 q.z<-ncol(x.z) 
+
 x.w<-cbind(rep(1,numobs),x.w)
 q.w<-ncol(x.w) 
 
@@ -85,8 +92,9 @@ for (i in 1:no_iter) {
 	else x.z_batch <- NULL
  	# print (dim(w))
  	# print (dim(w_batch))
+ 	print ('hi')
 	out<-fma.em.alg(y_batch,batch_size,r,k,p,x.z_batch,q.z,x.w_batch,q.w,phi,it,H,w_batch,Beta,sigma,eps,psi,lik)
-
+	print ('hi2')
 	likelihood<-out$likelihood
 	ph.y<-out$ph.y
 	py.h<-out$py.h
@@ -117,7 +125,7 @@ print ('finished')
 if (k>1)  {  index<-(apply(ph.y, 2, order))[k,]} else index<-rep(k,numobs) 
 z<-t(solve(t(H)%*%solve(psi)%*%H)%*%t(H)%*%solve(psi)%*%t(y))
 
-for (i in 1:k) if (sum(index==i)==0) index[c(sample(1:numobs,q.z))]<-i
+# for (i in 1:k) if (sum(index==i)==0) index[c(sample(1:numobs,q.z))]<-i
 
 output<-list(H=H,lik=likelihood,w=w,Beta=Beta,psi=psi,sigma=sigma,ph.y=ph.y,index=index,z=z,phi=phi,bic=bic,elapsed=proc.time()-ptm,aic=aic) 
 invisible(output)

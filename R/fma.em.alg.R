@@ -121,13 +121,13 @@ for (i in 1:k) {
 
 
 ### identifiability correction
-var.z<-temp1+temp2-temp3%*%t(temp3) 
-A<-(chol(var.z)) 
-for (i in 1:k) {sigma[i,,]<-t(ginv(A))%*%sigma[i,,]%*%ginv(A)
-                Beta[i,,]<-t(ginv(A))%*%Beta[i,,]
-}
+# var.z<-temp1+temp2-temp3%*%t(temp3) 
+# A<-(chol(var.z)) 
+# for (i in 1:k) {sigma[i,,]<-t(ginv(A))%*%sigma[i,,]%*%ginv(A)
+#                 Beta[i,,]<-t(ginv(A))%*%Beta[i,,]
+# }
                 
-H<-H%*%t(A)
+# H<-H%*%t(A)
 
 
              

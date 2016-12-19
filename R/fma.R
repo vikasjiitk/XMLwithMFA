@@ -10,8 +10,8 @@ if (scaling) y<-scale(y)
 
 numobs<-nrow(y)
 p<-ncol(y)
-ybar<- apply(y, 2, mean)
-y<-scale(y, ybar, scale=FALSE) 
+# ybar<- apply(y, 2, mean)
+# y<-scale(y, ybar, scale=FALSE) 
 lik<--100000000000
 
  
